@@ -12,9 +12,18 @@ table, th, td {
 </head>
 <body>
 <?php 
-session_start(); 
-//Getting the count of the records for that USN and Sem
-$sql0 = "SELECT COUNT(*) as count FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem'];
+session_start();
+$query1= mysqli_query($con,"SELECT MIN(Sem)as minsem, MAX(Sem) as maxsem FROM marks WHERE USN= '".$_SESSION['usn']."'");
+if(mysqli_num_rows($query1)==1){
+    while($row01 = $query1->fetch_assoc()){
+        $minsem= $row01['minsem']; //max sem for overall
+        $maxsem= $row01['maxsem']; 
+    }
+}
+$semcheck =  $minsem;
+while($semcheck <= $maxsem){
+  //Getting the count of the records for that USN and Sem
+$sql0 = "SELECT COUNT(*) as count FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$semcheck;
 $res0 = mysqli_query($con,$sql0);
 //Storing the count in a variable
 if(mysqli_num_rows($res0)==1){
@@ -22,14 +31,14 @@ if(mysqli_num_rows($res0)==1){
         $count= $row0['count']; //count of the no. of records
     }
 }
-
 //assiging the check variable to 1
 $check = 1;
 //traversing through all the records
 while ($check <= $count)
 { 
 $count=1;
-$sq1 = mysqli_query($con, "SELECT SubID, GREATEST(MSE1,MSE2,MSE3) as m1,LEAST(MSE1,MSE2,MSE3) as low , MSE1 as v1, MSE2 as v2, MSE3 as v3 from marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem']."");
+
+$sq1 = mysqli_query($con, "SELECT SubID, GREATEST(MSE1,MSE2,MSE3) as m1,LEAST(MSE1,MSE2,MSE3) as low , MSE1 as v1, MSE2 as v2, MSE3 as v3 from marks WHERE USN= '".$_SESSION['usn']."' AND Sem = ".$semcheck);
 if(mysqli_num_rows($sq1)>0){
     while($r = $sq1->fetch_assoc()){
         $val1= $r['v1']; //value of MSE1
@@ -54,13 +63,13 @@ if(mysqli_num_rows($sq1)>0){
             $val3 = $val2;
             $val2 = $temp;
         }  
-        $sql3 = "UPDATE marks SET traverse=".$count." WHERE USN = '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem']." and SubID= '$SubID'";
+        $sql3 = "UPDATE marks SET traverse=".$count." WHERE USN = '".$_SESSION['usn']."' and Sem = ".$semcheck." and SubID= '$SubID'";
         $count++;
         $res3 =mysqli_query($con,$sql3);
-        $sql1="SELECT *, (($val1 + $val2)/2 + LA1+ LA2)AS cie FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem']." and SubID= '$SubID' ";
+        $sql1="SELECT *, (($val1 + $val2)/2 + LA1+ LA2)AS cie FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$semcheck." and SubID= '$SubID' ";
         $res1= mysqli_query($con,$sql1);
         //query to calc gradept
-        $sql2="SELECT (credit*SEE_Grade)as gp FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem']." and SubID= '$SubID' ";
+        $sql2="SELECT (credit*SEE_Grade)as gp FROM marks WHERE USN= '".$_SESSION['usn']."' and Sem = ".$semcheck." and SubID= '$SubID' ";
         $res2 = mysqli_query($con, $sql2);
         //to store the calculated CIE value
         if(mysqli_num_rows($res1)>0){
@@ -75,13 +84,16 @@ if(mysqli_num_rows($sq1)>0){
         }
         }
         //inputing the calculated CIE and GP value into the database
-        $sql3 = "UPDATE marks SET CIE = ".$cieval.", Gradept = ".$gpval." WHERE USN = '".$_SESSION['usn']."' and Sem = ".$_SESSION['sem']." and SubID= '$SubID' ";
+        $sql3 = "UPDATE marks SET CIE = ".$cieval.", Gradept = ".$gpval." WHERE USN = '".$_SESSION['usn']."' and Sem = ".$semcheck." and SubID= '$SubID' ";
         $res03 = mysqli_query($con,$sql3);
     }
 }
+$check++;
+
+}
 
 //increase check to go to next record
-$check++;
+$semcheck++;
 }
 ?>
 <?php 
@@ -132,7 +144,6 @@ else{
         
 $semcheck++;   
 }
- 
  
 ?>
 </body>
